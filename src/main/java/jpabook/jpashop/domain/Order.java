@@ -1,9 +1,5 @@
 package jpabook.jpashop.domain;
 
-import jpabook.jpashop.domain.Delivery;
-import jpabook.jpashop.domain.Member;
-import jpabook.jpashop.domain.OrderStatus;
-import jpabook.jpashop.domain.Orderitem;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +10,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Getter @Setter
+@Getter
+@Setter
 public class Order {
 
     @Id
@@ -43,12 +40,45 @@ public class Order {
         this.member = member;
         member.getOrders().add(this);
     }
+
     public void addOrderItem(Orderitem orderItem) {
         orderItems.add(orderItem);
         orderItem.setOrder(this);
     }
+
     public void setDelivery(Delivery delivery) {
         this.delivery = delivery;
         delivery.setOrder(this);
+    }
+
+
+    public static Order createOrder(Member member, Delivery delivery, Orderitem... orderitems) {
+        Order order = new Order();
+        order.setMember(member);
+        order.setDelivery(delivery);
+        for (Orderitem orderitem : orderitems) {
+            order.addOrderItem(orderitem);
+        }
+        order.setStatus(OrderStatus.ORDER);
+        order.setOrderDate(LocalDateTime.now());
+        return order;
+    }
+
+    public void cancel() {
+        if (delivery.getStatus() == DeliveryStatus.COMP) {
+            throw new IllegalStateException("already Deliveried");
+        }
+
+        this.setStatus(OrderStatus.CANCEL);
+        for (Orderitem orderitem : orderItems) {
+            orderitem.cancel();
+        }
+    }
+
+    public int getTotalPrice() {
+        int totalPrice = orderItems.stream()
+                .mapToInt(Orderitem::getTotalPrice)
+                .sum();
+        return totalPrice;
     }
 }
